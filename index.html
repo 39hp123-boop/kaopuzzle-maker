@@ -532,8 +532,11 @@
         video: { facingMode: { ideal: facingMode } },
         audio: false
       });
+      cameraVideo.muted = true;
       cameraVideo.srcObject = cameraStream;
       cameraVideo.style.transform = facingMode==='user' ? 'scaleX(-1)' : 'none';
+      // getUserMediaがawaitを挟むため、autoplay属性だけでは再生が始まらない端末があるので明示的にplay()する
+      try{ await cameraVideo.play(); }catch(playErr){}
     }catch(err){
       cameraError.hidden = false;
     }
