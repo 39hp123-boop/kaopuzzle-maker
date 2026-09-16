@@ -396,7 +396,7 @@
         </div>
         <p class="camera-hint">この わくに かお を あわせてね</p>
         <div class="camera-error" id="cameraError" hidden>
-          <p class="camera-error-text">ガイドつきカメラを つかえませんでした。</p>
+          <p class="camera-error-text" id="cameraErrorText">ガイドつきカメラを つかえませんでした。</p>
           <p class="camera-error-detail" id="cameraErrorDetail"></p>
           <label class="btn btn-primary btn-sm" for="nativeCameraInput">📸 たんまつの カメラで とる</label>
           <input type="file" id="nativeCameraInput" accept="image/*" capture="environment">
@@ -460,7 +460,22 @@
   const cameraVideo = document.getElementById('cameraVideo');
   const cameraFrameWrap = document.getElementById('cameraFrameWrap');
   const cameraError = document.getElementById('cameraError');
+  const cameraErrorText = document.getElementById('cameraErrorText');
   const cameraErrorDetail = document.getElementById('cameraErrorDetail');
+
+  function friendlyCameraError(err){
+    const name = err && err.name;
+    if(name === 'NotAllowedError'){
+      return 'カメラの けんげんが オフに なっているかもしれません。端末の「設定」→ お使いの ブラウザ(Safari/Chromeなど)→「カメラ」を「許可」にしてから、もういちど おためしください。';
+    }
+    if(name === 'NotFoundError' || name === 'OverconstrainedError'){
+      return 'この端末で カメラが みつかりませんでした。';
+    }
+    if(name === 'NotReadableError'){
+      return 'ほかの アプリが カメラを つかっているかもしれません。カメラを つかっている アプリを とじてから、もういちど おためしください。';
+    }
+    return 'ガイドつきカメラを つかえませんでした。';
+  }
   const btnCameraTapPlay = document.getElementById('btnCameraTapPlay');
 
   function makeSampleFace(){
@@ -562,6 +577,7 @@
       }
     }catch(err){
       cameraError.hidden = false;
+      cameraErrorText.textContent = friendlyCameraError(err);
       cameraErrorDetail.textContent = (err && (err.name || err.message)) ? (err.name + ': ' + err.message) : '';
     }
   }
