@@ -1,0 +1,963 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>かおパズルメーカー</title>
+<meta name="theme-color" content="#EFF8F3">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="かおパズル">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Yomogi&family=Zen+Maru+Gothic:wght@400;500;700;900&display=swap">
+<style>
+  :root{
+    --paper:#EFF8F3;
+    --paper-2:#E1F0E7;
+    --tray:#D6EADF;
+    --ink:#1E2A3A;
+    --ink-soft:#5B6E72;
+    --coral:#FF6B57;
+    --coral-ink:#7A2A1F;
+    --mustard:#FFB238;
+    --teal:#1FA791;
+    --line:#C4E2D2;
+    --shadow: 0 10px 24px -12px rgba(30,42,58,.35);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#131F26;
+      --paper-2:#1A2B32;
+      --tray:#1F343B;
+      --ink:#F1F7F4;
+      --ink-soft:#9FB6B8;
+      --coral:#FF8168;
+      --coral-ink:#FFE4DC;
+      --mustard:#FFC35C;
+      --teal:#3FCDB4;
+      --line:#2A4048;
+      --shadow: 0 10px 26px -10px rgba(0,0,0,.55);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#131F26;
+    --paper-2:#1A2B32;
+    --tray:#1F343B;
+    --ink:#F1F7F4;
+    --ink-soft:#9FB6B8;
+    --coral:#FF8168;
+    --coral-ink:#FFE4DC;
+    --mustard:#FFC35C;
+    --teal:#3FCDB4;
+    --line:#2A4048;
+    --shadow: 0 10px 26px -10px rgba(0,0,0,.55);
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Zen Maru Gothic', 'Hiragino Maru Gothic ProN', sans-serif;
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:flex-start;
+    padding:28px 16px 60px;
+    overflow-x:hidden;
+    position:relative;
+    margin:0;
+  }
+
+  .deco{ position:fixed; z-index:0; pointer-events:none; opacity:.16; }
+  .deco svg{ width:100%; height:100%; display:block; }
+  .deco.d1{ top:-40px; left:-50px; width:170px; height:170px; fill:var(--mustard); transform:rotate(-12deg);}
+  .deco.d2{ bottom:-60px; right:-40px; width:220px; height:220px; fill:var(--teal); transform:rotate(20deg);}
+  .deco.d3{ top:38%; right:-70px; width:150px; height:150px; fill:var(--coral); transform:rotate(-25deg); display:none;}
+  @media (min-width:680px){ .deco.d3{ display:block; } }
+
+  .app{
+    position:relative; z-index:1;
+    width:100%; max-width:560px;
+    display:flex; flex-direction:column; gap:22px;
+  }
+
+  header{ text-align:center; display:flex; flex-direction:column; gap:6px; }
+  .eyebrow{
+    font-size:12.5px; letter-spacing:.14em; color:var(--teal); font-weight:700;
+    text-transform:uppercase;
+  }
+  h1{
+    font-family:'Yomogi', 'Zen Maru Gothic', sans-serif;
+    font-size:clamp(30px,7vw,42px);
+    margin:0; color:var(--coral); text-wrap:balance; line-height:1.15;
+  }
+  .sub{ margin:0; color:var(--ink-soft); font-size:14.5px; line-height:1.6; text-wrap:balance; }
+
+  .panel{
+    background:var(--paper-2);
+    border:1px solid var(--line);
+    border-radius:22px;
+    padding:18px;
+    display:flex; flex-direction:column; gap:16px;
+    box-shadow:var(--shadow);
+  }
+
+  .controls{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; justify-content:center; }
+  .btn{
+    font-family:inherit; font-weight:700; font-size:14px; cursor:pointer;
+    border-radius:999px; padding:10px 16px; border:2px solid transparent;
+    transition:transform .12s ease, box-shadow .12s ease;
+    display:inline-flex; align-items:center; gap:6px;
+  }
+  .btn:active{ transform:scale(.96); }
+  .btn:focus-visible{ outline:3px solid var(--teal); outline-offset:2px; }
+  .btn-primary{ background:var(--coral); color:#fff; box-shadow:0 6px 14px -6px rgba(255,107,87,.6);}
+  .btn-ghost{ background:transparent; color:var(--ink); border-color:var(--line); }
+  .btn-ghost.active{ background:var(--ink); color:var(--paper-2); border-color:var(--ink); }
+  .btn-sm{ padding:8px 13px; font-size:13px; }
+  input[type="file"]{ position:absolute; width:1px; height:1px; overflow:hidden; opacity:0; }
+
+  .sample-pill{
+    align-self:center;
+    font-size:11.5px; font-weight:700; color:var(--coral-ink);
+    background:color-mix(in srgb, var(--mustard) 35%, transparent);
+    border:1px solid var(--mustard);
+    padding:3px 10px; border-radius:999px; letter-spacing:.03em;
+  }
+
+  .board-wrap{
+    position:relative;
+    background:linear-gradient(180deg, var(--tray), var(--paper-2));
+    border:1px solid var(--line);
+    border-radius:18px;
+    padding:14px;
+  }
+  .board{
+    display:grid;
+    gap:5px;
+    width:100%;
+    margin:0 auto;
+    border-radius:10px;
+    overflow:hidden;
+  }
+  .slot{
+    position:relative;
+    border-radius:9px;
+    background-size:cover;
+    background-position:center;
+    cursor:pointer;
+    touch-action:none;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,.06);
+    transition:transform .12s ease, box-shadow .12s ease, outline-color .12s ease;
+  }
+  .slot.drag-over{ outline:3px dashed var(--teal); outline-offset:-3px; }
+  .slot.drag-source{ opacity:.3; }
+  .drag-ghost{
+    position:fixed; z-index:999; pointer-events:none;
+    border-radius:9px; background-size:cover; background-position:center;
+    box-shadow:0 12px 26px -8px rgba(0,0,0,.5);
+    opacity:.95;
+  }
+  .slot.empty{
+    background:repeating-linear-gradient(45deg, var(--paper), var(--paper) 8px, var(--tray) 8px, var(--tray) 16px);
+    box-shadow:inset 0 3px 8px rgba(0,0,0,.18);
+  }
+  .slot.piece:hover{ transform:scale(1.02); }
+  .slot.selected{
+    outline:3px solid var(--coral);
+    outline-offset:-3px;
+    transform:scale(1.04);
+    box-shadow:0 8px 16px -6px rgba(0,0,0,.35);
+    z-index:2;
+  }
+
+  .settings-row{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; justify-content:center; }
+  .name-field{
+    font-family:inherit; font-size:14px; color:var(--ink);
+    background:var(--paper); border:2px solid var(--line); border-radius:999px;
+    padding:9px 14px; width:180px; max-width:60vw;
+  }
+  .name-field::placeholder{ color:var(--ink-soft); opacity:.75; }
+  .name-field:focus-visible{ outline:3px solid var(--teal); outline-offset:1px; }
+
+  .letters-wrap{ display:flex; flex-direction:column; gap:6px; align-items:center; }
+  .letters-row{ display:flex; justify-content:center; gap:6px; flex-wrap:wrap; }
+  .letter-tile{
+    width:30px; height:34px; border-radius:8px;
+    display:flex; align-items:center; justify-content:center;
+    font-weight:900; font-size:16px; color:var(--ink-soft);
+    background:var(--paper); border:2px solid var(--line);
+    transition:transform .2s ease, border-color .2s ease, background .2s ease, color .2s ease;
+  }
+  .letter-tile.revealed{
+    color:var(--coral); border-color:var(--teal);
+    background:color-mix(in srgb, var(--teal) 16%, var(--paper));
+    transform:translateY(-2px);
+  }
+
+  .tray-row{ display:flex; align-items:center; justify-content:center; gap:14px; }
+  .tray-label{ font-size:13px; color:var(--ink-soft); text-align:center; }
+  .tray-dish{
+    width:74px; height:74px; border-radius:50%;
+    border:2px dashed var(--mustard);
+    display:flex; align-items:center; justify-content:center;
+    padding:6px;
+    animation:pulse 1.8s ease-in-out infinite;
+    flex-shrink:0;
+  }
+  @media (prefers-reduced-motion: reduce){ .tray-dish{ animation:none; } }
+  .tray-dish.filled{ animation:none; border-style:solid; border-color:var(--line); }
+  @keyframes pulse{
+    0%,100%{ box-shadow:0 0 0 0 color-mix(in srgb, var(--mustard) 45%, transparent); }
+    50%{ box-shadow:0 0 0 8px color-mix(in srgb, var(--mustard) 0%, transparent); }
+  }
+  .tray-dish .slot{ width:100%; height:100%; border-radius:50%; }
+  .tray-dish .slot.empty{ background:var(--paper-2); box-shadow:none; border-radius:50%; }
+
+  .status-row{ display:flex; justify-content:space-between; align-items:center; font-size:13px; color:var(--ink-soft); }
+  .status-row b{ color:var(--ink); font-variant-numeric:tabular-nums; }
+
+  .hint{ text-align:center; font-size:13px; color:var(--ink-soft); }
+
+  footer{ text-align:center; font-size:11.5px; color:var(--ink-soft); line-height:1.6; padding:0 10px; }
+  footer strong{ color:var(--teal); }
+
+  .overlay{
+    position:absolute; inset:0; z-index:5;
+    background:color-mix(in srgb, var(--ink) 55%, transparent);
+    backdrop-filter:blur(2px);
+    display:flex; align-items:center; justify-content:center;
+    padding:18px;
+    border-radius:22px;
+  }
+  .overlay[hidden]{ display:none; }
+  .overlay-card{
+    position:relative;
+    background:var(--paper-2);
+    border-radius:20px;
+    padding:22px 20px 20px;
+    width:100%; max-width:340px;
+    text-align:center;
+    box-shadow:0 22px 44px -14px rgba(0,0,0,.5);
+    animation:pop .35s cubic-bezier(.2,1.4,.4,1);
+  }
+  @media (prefers-reduced-motion: reduce){ .overlay-card{ animation:none; } }
+  @keyframes pop{ from{ transform:scale(.85); opacity:0; } to{ transform:scale(1); opacity:1; } }
+  .confetti-canvas{ position:absolute; inset:0; pointer-events:none; border-radius:20px; }
+  .stamp{
+    display:inline-block; font-family:'Yomogi', sans-serif; font-size:20px; color:#fff;
+    background:var(--teal); border:3px solid color-mix(in srgb, var(--teal) 60%, black);
+    border-radius:50%; width:96px; height:96px; line-height:1.1;
+    display:flex; align-items:center; justify-content:center;
+    transform:rotate(-8deg); margin:0 auto 10px;
+  }
+  .overlay-photo{
+    width:100%; aspect-ratio:var(--photo-ratio, 1/1);
+    border-radius:12px; object-fit:cover; display:block;
+    box-shadow:0 6px 16px -6px rgba(0,0,0,.4); margin-bottom:12px;
+    border:6px solid #fff;
+  }
+  .overlay-stats{ font-size:13.5px; color:var(--ink-soft); margin-bottom:14px; }
+  .overlay-stats b{ color:var(--coral); }
+  .overlay-actions{ display:flex; gap:8px; justify-content:center; flex-wrap:wrap; }
+
+  .camera-card{ max-width:420px; }
+  .camera-frame-wrap{
+    position:relative;
+    width:100%;
+    aspect-ratio:var(--cam-ratio, 1);
+    border-radius:14px;
+    overflow:hidden;
+    background:#111;
+    margin-bottom:10px;
+  }
+  .camera-frame-wrap video{
+    width:100%; height:100%; object-fit:cover; display:block;
+  }
+  .camera-guide{
+    position:absolute; inset:7%;
+    border:3px dashed rgba(255,255,255,.85);
+    border-radius:16px;
+    box-shadow:0 0 0 999px rgba(0,0,0,.4);
+    pointer-events:none;
+  }
+  .camera-face-oval{
+    position:absolute; left:50%; top:46%;
+    width:56%; height:72%;
+    transform:translate(-50%,-50%);
+    border:2.5px dashed rgba(255,255,255,.7);
+    border-radius:50%;
+  }
+  .camera-hint{ font-size:13px; color:var(--ink-soft); margin:0 0 12px; }
+  .camera-error{
+    display:flex; flex-direction:column; align-items:center; gap:8px;
+    margin:0 0 12px;
+  }
+  .camera-error-text{ font-size:13px; color:var(--coral); margin:0; }
+
+  .relative{ position:relative; }
+
+  @media (max-width:380px){
+    .panel{ padding:14px; border-radius:18px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="deco d1" aria-hidden="true"><svg viewBox="0 0 100 100"><path d="M20 20h25a8 8 0 0 1 16 0h25v25a8 8 0 0 1 0 16v25h-25a8 8 0 0 0-16 0h-25v-25a8 8 0 0 0 0-16z"/></svg></div>
+<div class="deco d2" aria-hidden="true"><svg viewBox="0 0 100 100"><path d="M20 20h25a8 8 0 0 1 16 0h25v25a8 8 0 0 1 0 16v25h-25a8 8 0 0 0-16 0h-25v-25a8 8 0 0 0 0-16z"/></svg></div>
+<div class="deco d3" aria-hidden="true"><svg viewBox="0 0 100 100"><path d="M20 20h25a8 8 0 0 1 16 0h25v25a8 8 0 0 1 0 16v25h-25a8 8 0 0 0-16 0h-25v-25a8 8 0 0 0 0-16z"/></svg></div>
+
+<div class="app">
+  <header>
+    <div class="eyebrow">しゃしんパズル こうぼう</div>
+    <h1>かおパズルメーカー</h1>
+    <p class="sub">かおしゃしんをパズルにして、タップでならべかえてあそぼう。</p>
+  </header>
+
+  <div class="panel relative" id="panel">
+    <div class="controls">
+      <button class="btn btn-primary" id="btnOpenCamera">📷 カメラで とる</button>
+      <label class="btn btn-ghost" for="fileInput">🖼 アルバムから えらぶ</label>
+      <input type="file" id="fileInput" accept="image/*">
+      <button class="btn btn-ghost btn-sm" id="btn6" aria-pressed="true">6ピース</button>
+      <button class="btn btn-ghost btn-sm" id="btn9" aria-pressed="false">9ピース</button>
+      <button class="btn btn-ghost btn-sm" id="btnShuffle">🔀 もう一回まぜる</button>
+    </div>
+
+    <div class="settings-row">
+      <button class="btn btn-ghost btn-sm active" id="modeTap" aria-pressed="true">👆 タップ</button>
+      <button class="btn btn-ghost btn-sm" id="modeDrag" aria-pressed="false">✋ ドラッグ</button>
+      <button class="btn btn-ghost btn-sm" id="btnTimer" aria-pressed="false">⏱ タイマー: オフ</button>
+      <button class="btn btn-ghost btn-sm active" id="btnSound" aria-pressed="true">🔊 おと: オン</button>
+      <input type="text" id="nameInput" class="name-field" placeholder="なまえ(かんせい時にでるよ)" maxlength="10">
+    </div>
+
+    <span class="sample-pill" id="samplePill">サンプル画像で あそべます</span>
+
+    <div class="board-wrap">
+      <div class="board" id="board"></div>
+    </div>
+
+    <div class="letters-wrap">
+      <p class="hint" style="margin:0;">そろうほど、ことばが でてくるよ</p>
+      <div class="letters-row" id="lettersRow"></div>
+    </div>
+
+    <div class="tray-row">
+      <div class="tray-label">とっておきの<br>さいごの1まい</div>
+      <div class="tray-dish" id="trayDish"></div>
+    </div>
+
+    <div class="status-row">
+      <span>てかず: <b id="moveCount">0</b></span>
+      <span id="timerDisplay" style="display:none;">⏱ 00:00</span>
+      <span id="gridLabel">3×2 マス</span>
+    </div>
+    <p class="hint" id="hintText">ピースを タップ → うごかしたい ばしょを タップ！</p>
+
+    <div class="overlay" id="overlay" hidden>
+      <canvas class="confetti-canvas" id="confetti"></canvas>
+      <div class="overlay-card">
+        <div class="stamp">できた!</div>
+        <img class="overlay-photo" id="overlayPhoto" alt="かんせいした しゃしん">
+        <p class="overlay-stats">
+          <span id="overlayName"></span><br>
+          てかず <b id="finalMoves">0</b>かい<span id="finalTimeWrap" hidden>、タイム <b id="finalTime">00:00</b></span> で かんせい！<br>
+          したの ボタンで ほぞんできるよ(うまく いかない ときは しゃしんを ながおしでもOK)。
+        </p>
+        <div class="overlay-actions">
+          <button class="btn btn-primary btn-sm" id="btnSavePhoto">💾 しゃしんを ほぞん</button>
+          <button class="btn btn-ghost btn-sm" id="btnAgain">🔀 もういちど</button>
+          <button class="btn btn-ghost btn-sm" id="btnClose">とじる</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="overlay" id="cameraOverlay" hidden>
+      <div class="overlay-card camera-card">
+        <div class="camera-frame-wrap" id="cameraFrameWrap">
+          <video id="cameraVideo" autoplay playsinline muted></video>
+          <div class="camera-guide" aria-hidden="true">
+            <div class="camera-face-oval"></div>
+          </div>
+        </div>
+        <p class="camera-hint">この わくに かお を あわせてね</p>
+        <div class="camera-error" id="cameraError" hidden>
+          <p class="camera-error-text">ガイドつきカメラを つかえませんでした。</p>
+          <label class="btn btn-primary btn-sm" for="nativeCameraInput">📸 たんまつの カメラで とる</label>
+          <input type="file" id="nativeCameraInput" accept="image/*" capture="environment">
+        </div>
+        <div class="overlay-actions">
+          <button class="btn btn-ghost btn-sm" id="btnSwitchCam">🔄 カメラきりかえ</button>
+          <button class="btn btn-primary btn-sm" id="btnCapture">📸 とる</button>
+          <button class="btn btn-ghost btn-sm" id="btnCameraClose">とじる</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>📵 しゃしんは <strong>この端末の中だけ</strong> で処理されます。サーバーへの送信・保存はされません。</footer>
+</div>
+
+<script>
+(function(){
+  const TILE = 220;
+  let cols = 3, rows = 2;
+  let source = null; // canvas or image used as current photo
+  let photoRatio = cols/rows;
+  let tiles = [];     // dataURLs, index = original piece id (0..n-1), reading order
+  let n = cols*rows;
+  let heldId = null;
+  let slots = [];      // length n+1 (last = tray), value = pieceId or null
+  let selected = null; // slot index currently selected
+  let moves = 0;
+  let mode = 'tap'; // 'tap' | 'drag'
+  let timerEnabled = false;
+  let timerInterval = null;
+  let startTime = null;
+  let elapsedFinal = null;
+  let dragSourceIndex = null;
+  let dragGhost = null;
+  let dragOverEl = null;
+  let reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let soundEnabled = true;
+  let audioCtx = null;
+  let cameraStream = null;
+  let facingMode = 'environment'; // 'environment' = アウトカメラ, 'user' = インカメラ
+  let completedPhotoDataUrl = null;
+
+  const board = document.getElementById('board');
+  const trayDish = document.getElementById('trayDish');
+  const moveCountEl = document.getElementById('moveCount');
+  const gridLabelEl = document.getElementById('gridLabel');
+  const timerDisplay = document.getElementById('timerDisplay');
+  const samplePill = document.getElementById('samplePill');
+  const overlay = document.getElementById('overlay');
+  const overlayPhoto = document.getElementById('overlayPhoto');
+  const overlayName = document.getElementById('overlayName');
+  const finalMovesEl = document.getElementById('finalMoves');
+  const finalTimeWrap = document.getElementById('finalTimeWrap');
+  const finalTimeEl = document.getElementById('finalTime');
+  const panel = document.getElementById('panel');
+  const nameInput = document.getElementById('nameInput');
+  const lettersRow = document.getElementById('lettersRow');
+  const hintText = document.getElementById('hintText');
+  const cameraOverlay = document.getElementById('cameraOverlay');
+  const cameraVideo = document.getElementById('cameraVideo');
+  const cameraFrameWrap = document.getElementById('cameraFrameWrap');
+  const cameraError = document.getElementById('cameraError');
+
+  function makeSampleFace(){
+    const c = document.createElement('canvas');
+    c.width = 600; c.height = 600;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#FFDEB0'; ctx.fillRect(0,0,600,600);
+    ctx.fillStyle = '#3A2A20';
+    ctx.beginPath(); ctx.arc(300,230,190,Math.PI*1.02,Math.PI*1.98); ctx.fill();
+    ctx.fillStyle = '#FFCB8E';
+    ctx.beginPath(); ctx.ellipse(300,330,150,165,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#FF9D8A'; ctx.globalAlpha=.55;
+    ctx.beginPath(); ctx.ellipse(215,375,32,20,0,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(385,375,32,20,0,0,Math.PI*2); ctx.fill();
+    ctx.globalAlpha=1;
+    ctx.fillStyle = '#2B2320';
+    [[240,305],[360,305]].forEach(([x,y])=>{
+      ctx.beginPath(); ctx.ellipse(x,y,17,20,0,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(x+5,y-6,4,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='#2B2320';
+    });
+    ctx.strokeStyle = '#2B2320'; ctx.lineWidth = 10; ctx.lineCap='round';
+    ctx.beginPath(); ctx.arc(300,378,58,Math.PI*0.12,Math.PI*0.88); ctx.stroke();
+    ctx.fillStyle = '#E8546B';
+    ctx.beginPath(); ctx.ellipse(210,240,14,20,-0.3,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(390,240,14,20,0.3,0,Math.PI*2); ctx.fill();
+    return c;
+  }
+  let sampleCanvas = makeSampleFace();
+
+  // --- Sound (synthesized via Web Audio API, no audio files/libraries) ---
+  function getAudioCtx(){
+    if(!audioCtx){
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if(!AC) return null;
+      audioCtx = new AC();
+    }
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+    return audioCtx;
+  }
+  function playTone(freq, startAt, dur, type, gainPeak){
+    const ctx = getAudioCtx();
+    if(!ctx) return;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = type || 'sine';
+    osc.frequency.value = freq;
+    const t0 = ctx.currentTime + startAt;
+    gain.gain.setValueAtTime(0, t0);
+    gain.gain.linearRampToValueAtTime(gainPeak || 0.18, t0 + 0.012);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(t0);
+    osc.stop(t0 + dur + 0.02);
+  }
+  function playSelectSound(){
+    if(!soundEnabled) return;
+    playTone(660, 0, 0.09, 'sine', 0.12);
+  }
+  function playMoveSound(){
+    if(!soundEnabled) return;
+    playTone(420, 0, 0.1, 'square', 0.1);
+  }
+  function playCompleteSound(){
+    if(!soundEnabled) return;
+    [523.25, 659.25, 783.99, 1046.5].forEach((f, i)=> playTone(f, i*0.11, 0.35, 'triangle', 0.16));
+  }
+
+  // --- Camera capture (getUserMedia, in/out camera + framing guide) ---
+  // すべて端末内で完結。映像はどこにも送信・保存されない。
+  function stopCameraStream(){
+    if(cameraStream){
+      cameraStream.getTracks().forEach(t=>t.stop());
+      cameraStream = null;
+    }
+    cameraVideo.srcObject = null;
+  }
+
+  async function startCameraStream(){
+    cameraError.hidden = true;
+    cameraFrameWrap.style.setProperty('--cam-ratio', cols/rows);
+    stopCameraStream();
+    try{
+      cameraStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: facingMode } },
+        audio: false
+      });
+      cameraVideo.srcObject = cameraStream;
+      cameraVideo.style.transform = facingMode==='user' ? 'scaleX(-1)' : 'none';
+    }catch(err){
+      cameraError.hidden = false;
+    }
+  }
+
+  function openCamera(){
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+      cameraOverlay.hidden = false;
+      cameraError.hidden = false;
+      return;
+    }
+    cameraOverlay.hidden = false;
+    startCameraStream();
+  }
+
+  function closeCamera(){
+    stopCameraStream();
+    cameraOverlay.hidden = true;
+  }
+
+  function switchCamera(){
+    facingMode = facingMode==='user' ? 'environment' : 'user';
+    startCameraStream();
+  }
+
+  function captureFromCamera(){
+    if(!cameraVideo.videoWidth) return;
+    const c = document.createElement('canvas');
+    c.width = cameraVideo.videoWidth;
+    c.height = cameraVideo.videoHeight;
+    c.getContext('2d').drawImage(cameraVideo, 0, 0);
+    source = c;
+    samplePill.style.display = 'none';
+    sliceSource();
+    shuffle();
+    closeCamera();
+  }
+
+  function srcSize(s){
+    if (s instanceof HTMLCanvasElement) return [s.width, s.height];
+    return [s.naturalWidth, s.naturalHeight];
+  }
+
+  function sliceSource(){
+    const [sw, sh] = srcSize(source);
+    const target = cols/rows;
+    const imgAspect = sw/sh;
+    let cw, ch, sx, sy;
+    if (imgAspect > target){ ch = sh; cw = sh*target; sx = (sw-cw)/2; sy = 0; }
+    else { cw = sw; ch = sw/target; sx = 0; sy = (sh-ch)/2; }
+    photoRatio = target;
+
+    const big = document.createElement('canvas');
+    big.width = cols*TILE; big.height = rows*TILE;
+    const bctx = big.getContext('2d');
+    bctx.drawImage(source, sx, sy, cw, ch, 0, 0, big.width, big.height);
+
+    tiles = [];
+    for(let r=0;r<rows;r++){
+      for(let c=0;c<cols;c++){
+        const t = document.createElement('canvas');
+        t.width = TILE; t.height = TILE;
+        t.getContext('2d').drawImage(big, c*TILE, r*TILE, TILE, TILE, 0,0,TILE,TILE);
+        tiles.push(t.toDataURL('image/jpeg', 0.88));
+      }
+    }
+  }
+
+  function shuffle(){
+    n = cols*rows;
+    heldId = Math.floor(Math.random()*n);
+    const others = [];
+    for(let i=0;i<n;i++) if(i!==heldId) others.push(i);
+    for(let i=others.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [others[i],others[j]] = [others[j],others[i]];
+    }
+    slots = new Array(n+1).fill(null);
+    const cells = [];
+    for(let i=0;i<n;i++) if(i!==heldId) cells.push(i);
+    cells.forEach((cellIdx, k)=>{ slots[cellIdx] = others[k]; });
+    slots[heldId] = null;
+    slots[n] = heldId;
+    moves = 0;
+    selected = null;
+    elapsedFinal = null;
+    updateStatus();
+    startTimer();
+    render();
+  }
+
+  function updateStatus(){
+    moveCountEl.textContent = moves;
+    gridLabelEl.textContent = cols+'×'+rows+' マス';
+  }
+
+  function attachInteractions(el, i){
+    el.dataset.index = i;
+    el.addEventListener('click', ()=>onSlotTap(i));
+    el.addEventListener('pointerdown', (e)=>onDragStart(e, i));
+  }
+
+  function render(){
+    board.style.gridTemplateColumns = 'repeat('+cols+', 1fr)';
+    board.style.gridTemplateRows = 'repeat('+rows+', 1fr)';
+    board.style.aspectRatio = cols+' / '+rows;
+    board.innerHTML = '';
+    for(let i=0;i<n;i++){
+      const el = document.createElement('div');
+      el.className = 'slot' + (slots[i]===null ? ' empty' : ' piece') + (selected===i ? ' selected' : '');
+      if(slots[i]!==null){ el.style.backgroundImage = 'url('+tiles[slots[i]]+')'; }
+      el.setAttribute('role','button');
+      el.setAttribute('aria-label', slots[i]===null ? 'あきマス' : 'パズルのピース');
+      attachInteractions(el, i);
+      board.appendChild(el);
+    }
+    trayDish.innerHTML = '';
+    trayDish.className = 'tray-dish' + (slots[n]!==null ? ' filled' : '');
+    const trayEl = document.createElement('div');
+    trayEl.className = 'slot' + (slots[n]===null ? ' empty' : ' piece') + (selected===n ? ' selected' : '');
+    if(slots[n]!==null){ trayEl.style.backgroundImage = 'url('+tiles[slots[n]]+')'; }
+    trayEl.setAttribute('role','button');
+    trayEl.setAttribute('aria-label', slots[n]===null ? 'あきトレイ' : 'さいごのピース');
+    attachInteractions(trayEl, n);
+    trayDish.appendChild(trayEl);
+    updateLetters();
+  }
+
+  function onSlotTap(i){
+    if(mode!=='tap') return;
+    if(selected===null){
+      if(slots[i]===null) return;
+      selected = i;
+      playSelectSound();
+      render();
+      return;
+    }
+    if(selected===i){ selected=null; render(); return; }
+    performMove(selected, i);
+  }
+
+  function performMove(a,b){
+    if(a===b) return;
+    [slots[a], slots[b]] = [slots[b], slots[a]];
+    moves++;
+    selected = null;
+    playMoveSound();
+    updateStatus();
+    render();
+    checkWin();
+  }
+
+  // --- Drag interaction (pointer events, works for mouse + touch) ---
+  function slotElFromPoint(x,y){
+    let el = document.elementFromPoint(x,y);
+    while(el && el.dataset && el.dataset.index===undefined && el!==document.body){ el = el.parentElement; }
+    return (el && el.dataset && el.dataset.index!==undefined) ? el : null;
+  }
+  function positionGhost(x,y){
+    if(!dragGhost) return;
+    dragGhost.style.left = (x - dragGhost.offsetWidth/2)+'px';
+    dragGhost.style.top = (y - dragGhost.offsetHeight/2)+'px';
+  }
+  function onDragStart(e, i){
+    if(mode!=='drag' || slots[i]===null) return;
+    e.preventDefault();
+    dragSourceIndex = i;
+    const el = e.currentTarget;
+    el.classList.add('drag-source');
+    try{ el.setPointerCapture(e.pointerId); }catch(err){}
+    const rect = el.getBoundingClientRect();
+    dragGhost = document.createElement('div');
+    dragGhost.className = 'drag-ghost';
+    dragGhost.style.width = rect.width+'px';
+    dragGhost.style.height = rect.height+'px';
+    dragGhost.style.backgroundImage = 'url('+tiles[slots[i]]+')';
+    document.body.appendChild(dragGhost);
+    positionGhost(e.clientX, e.clientY);
+    el.addEventListener('pointermove', onDragMove);
+    el.addEventListener('pointerup', onDragEnd);
+    el.addEventListener('pointercancel', onDragEnd);
+  }
+  function onDragMove(e){
+    if(dragSourceIndex===null) return;
+    positionGhost(e.clientX, e.clientY);
+    const target = slotElFromPoint(e.clientX, e.clientY);
+    if(dragOverEl && dragOverEl!==target) dragOverEl.classList.remove('drag-over');
+    if(target && parseInt(target.dataset.index,10)!==dragSourceIndex){
+      target.classList.add('drag-over'); dragOverEl = target;
+    } else { dragOverEl = null; }
+  }
+  function onDragEnd(e){
+    const el = e.currentTarget;
+    el.removeEventListener('pointermove', onDragMove);
+    el.removeEventListener('pointerup', onDragEnd);
+    el.removeEventListener('pointercancel', onDragEnd);
+    el.classList.remove('drag-source');
+    const target = slotElFromPoint(e.clientX, e.clientY);
+    if(dragOverEl) dragOverEl.classList.remove('drag-over');
+    dragOverEl = null;
+    if(dragGhost){ dragGhost.remove(); dragGhost = null; }
+    const src = dragSourceIndex;
+    dragSourceIndex = null;
+    if(target){
+      const ti = parseInt(target.dataset.index, 10);
+      if(!isNaN(ti) && ti!==src){ performMove(src, ti); return; }
+    }
+    render();
+  }
+
+  function setMode(m){
+    mode = m;
+    document.getElementById('modeTap').classList.toggle('active', m==='tap');
+    document.getElementById('modeTap').setAttribute('aria-pressed', m==='tap');
+    document.getElementById('modeDrag').classList.toggle('active', m==='drag');
+    document.getElementById('modeDrag').setAttribute('aria-pressed', m==='drag');
+    selected = null;
+    updateHint();
+    render();
+  }
+  function updateHint(){
+    hintText.textContent = mode==='tap'
+      ? 'ピースを タップ → うごかしたい ばしょを タップ！'
+      : 'ピースを ゆびで つまんで、いれたい ばしょへ ドラッグ！';
+  }
+
+  function formatTime(totalSec){
+    const m = Math.floor(totalSec/60), s = totalSec%60;
+    return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+  }
+  function startTimer(){
+    clearInterval(timerInterval);
+    if(!timerEnabled){ timerDisplay.style.display='none'; return; }
+    timerDisplay.style.display='inline';
+    startTime = Date.now();
+    updateTimerDisplay();
+    timerInterval = setInterval(updateTimerDisplay, 250);
+  }
+  function updateTimerDisplay(){
+    timerDisplay.textContent = '⏱ '+formatTime(Math.floor((Date.now()-startTime)/1000));
+  }
+
+  function updateLetters(){
+    const word = (nameInput.value.trim() || 'できたよ').slice(0,10);
+    const correct = slots.slice(0,n).filter((v,i)=>v===i).length;
+    const ratio = n>0 ? correct/n : 0;
+    const revealCount = Math.round(ratio * word.length);
+    lettersRow.innerHTML = '';
+    for(let i=0;i<word.length;i++){
+      const t = document.createElement('div');
+      const on = i<revealCount;
+      t.className = 'letter-tile' + (on ? ' revealed' : '');
+      t.textContent = on ? word[i] : '・';
+      lettersRow.appendChild(t);
+    }
+  }
+
+  function checkWin(){
+    for(let i=0;i<n;i++){ if(slots[i]!==i) return; }
+    clearInterval(timerInterval);
+    if(timerEnabled && startTime){ elapsedFinal = Math.floor((Date.now()-startTime)/1000); }
+    setTimeout(showComplete, 250);
+  }
+
+  function showComplete(){
+    playCompleteSound();
+    overlayPhoto.style.setProperty('--photo-ratio', photoRatio);
+    overlayPhoto.style.aspectRatio = photoRatio;
+    const [sw,sh] = srcSize(source);
+    const target = photoRatio, imgAspect = sw/sh;
+    let cw,ch,sx,sy;
+    if (imgAspect > target){ ch=sh; cw=sh*target; sx=(sw-cw)/2; sy=0; } else { cw=sw; ch=sw/target; sx=0; sy=(sh-ch)/2; }
+    const photoCanvas = document.createElement('canvas');
+    photoCanvas.width = 720; photoCanvas.height = 720/target;
+    photoCanvas.getContext('2d').drawImage(source, sx, sy, cw, ch, 0,0, photoCanvas.width, photoCanvas.height);
+    completedPhotoDataUrl = photoCanvas.toDataURL('image/jpeg',0.92);
+    overlayPhoto.src = completedPhotoDataUrl;
+
+    const nm = nameInput.value.trim();
+    overlayName.textContent = nm ? (nm+'ちゃん、かんせい！') : '';
+    finalMovesEl.textContent = moves;
+    if(timerEnabled && elapsedFinal!==null){
+      finalTimeWrap.hidden = false;
+      finalTimeEl.textContent = formatTime(elapsedFinal);
+    } else {
+      finalTimeWrap.hidden = true;
+    }
+    overlay.hidden = false;
+    runConfetti();
+  }
+
+  async function saveCompletedPhoto(){
+    if(!completedPhotoDataUrl) return;
+    const nm = nameInput.value.trim();
+    const filename = (nm ? nm+'_' : '') + 'かおパズル_かんせい.jpg';
+
+    // Claude Artifact上ではダウンロードリンクが無効化されるため、
+    // downloadsケーパビリティ経由で保存する(それ以外の環境では通常の<a download>にフォールバック)
+    if(window.claude && typeof window.claude.use === 'function'){
+      try{
+        const downloads = await window.claude.use('downloads');
+        if(downloads){
+          const blob = await (await fetch(completedPhotoDataUrl)).blob();
+          try{ await downloads.save({ filename, data: blob }); }catch(err){}
+          return;
+        }
+      }catch(err){}
+    }
+
+    const a = document.createElement('a');
+    a.href = completedPhotoDataUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+
+  function runConfetti(){
+    const canvas = document.getElementById('confetti');
+    const rect = panel.getBoundingClientRect();
+    canvas.width = rect.width; canvas.height = rect.height;
+    const ctx = canvas.getContext('2d');
+    if(reducedMotion){
+      const colors=['#FF6B57','#FFB238','#1FA791'];
+      for(let i=0;i<40;i++){
+        ctx.fillStyle = colors[i%3];
+        ctx.fillRect(Math.random()*canvas.width, Math.random()*canvas.height*0.5, 6, 10);
+      }
+      return;
+    }
+    const colors=['#FF6B57','#FFB238','#1FA791','#FFD9C7'];
+    const parts = Array.from({length:70}, ()=>({
+      x: Math.random()*canvas.width, y: -20-Math.random()*canvas.height*0.5,
+      vy: 2+Math.random()*3, vx: (Math.random()-0.5)*2,
+      size: 4+Math.random()*5, color: colors[Math.floor(Math.random()*colors.length)],
+      rot: Math.random()*Math.PI, vr: (Math.random()-0.5)*0.3
+    }));
+    let frame=0;
+    function tick(){
+      frame++;
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      parts.forEach(p=>{
+        p.x+=p.vx; p.y+=p.vy; p.rot+=p.vr;
+        ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot);
+        ctx.fillStyle=p.color; ctx.fillRect(-p.size/2,-p.size/2,p.size,p.size*0.6);
+        ctx.restore();
+      });
+      if(frame<160 && !overlay.hidden){ requestAnimationFrame(tick); }
+      else { ctx.clearRect(0,0,canvas.width,canvas.height); }
+    }
+    tick();
+  }
+
+  function setGrid(c,r,btn){
+    cols=c; rows=r;
+    document.getElementById('btn6').classList.toggle('active', c===3&&r===2);
+    document.getElementById('btn6').setAttribute('aria-pressed', c===3&&r===2);
+    document.getElementById('btn9').classList.toggle('active', c===3&&r===3);
+    document.getElementById('btn9').setAttribute('aria-pressed', c===3&&r===3);
+    sliceSource();
+    shuffle();
+  }
+
+  document.getElementById('btn6').addEventListener('click', ()=>setGrid(3,2));
+  document.getElementById('btn9').addEventListener('click', ()=>setGrid(3,3));
+  document.getElementById('btnShuffle').addEventListener('click', shuffle);
+  document.getElementById('btnAgain').addEventListener('click', ()=>{ overlay.hidden=true; shuffle(); });
+  document.getElementById('btnClose').addEventListener('click', ()=>{ overlay.hidden=true; });
+  document.getElementById('btnSavePhoto').addEventListener('click', saveCompletedPhoto);
+  document.getElementById('btnOpenCamera').addEventListener('click', openCamera);
+  document.getElementById('btnCameraClose').addEventListener('click', closeCamera);
+  document.getElementById('btnSwitchCam').addEventListener('click', switchCamera);
+  document.getElementById('btnCapture').addEventListener('click', captureFromCamera);
+  document.getElementById('modeTap').addEventListener('click', ()=>setMode('tap'));
+  document.getElementById('modeDrag').addEventListener('click', ()=>setMode('drag'));
+  document.getElementById('btnTimer').addEventListener('click', function(){
+    timerEnabled = !timerEnabled;
+    this.textContent = timerEnabled ? '⏱ タイマー: オン' : '⏱ タイマー: オフ';
+    this.setAttribute('aria-pressed', timerEnabled);
+    this.classList.toggle('active', timerEnabled);
+    startTimer();
+  });
+  document.getElementById('btnSound').addEventListener('click', function(){
+    soundEnabled = !soundEnabled;
+    this.textContent = soundEnabled ? '🔊 おと: オン' : '🔇 おと: オフ';
+    this.setAttribute('aria-pressed', soundEnabled);
+    this.classList.toggle('active', soundEnabled);
+    if(soundEnabled) playSelectSound();
+  });
+  nameInput.addEventListener('input', updateLetters);
+
+  function loadImageFile(file){
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = function(ev){
+      const img = new Image();
+      img.onload = function(){
+        source = img;
+        samplePill.style.display = 'none';
+        sliceSource();
+        shuffle();
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  document.getElementById('fileInput').addEventListener('change', function(e){
+    loadImageFile(e.target.files && e.target.files[0]);
+  });
+
+  // ガイドつきカメラ(getUserMedia)が使えない環境向けの保険: 端末標準のカメラアプリを直接開く
+  document.getElementById('nativeCameraInput').addEventListener('change', function(e){
+    loadImageFile(e.target.files && e.target.files[0]);
+    closeCamera();
+  });
+
+  window.addEventListener('pagehide', stopCameraStream);
+
+  source = sampleCanvas;
+  sliceSource();
+  shuffle();
+})();
+</script>
+
+</body>
+</html>
