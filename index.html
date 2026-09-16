@@ -294,6 +294,16 @@
   }
   .camera-error-text{ font-size:13px; color:var(--coral); margin:0; }
 
+  .camera-tap-play{
+    position:absolute; inset:0; z-index:2;
+    width:100%; height:100%;
+    background:rgba(0,0,0,.6);
+    color:#fff; font-family:inherit; font-weight:700; font-size:15px;
+    border:none; border-radius:inherit; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; gap:6px;
+  }
+  .camera-tap-play[hidden]{ display:none; }
+
   .relative{ position:relative; }
 
   @media (max-width:380px){
@@ -380,6 +390,7 @@
           <div class="camera-guide" aria-hidden="true">
             <div class="camera-face-oval"></div>
           </div>
+          <button type="button" class="camera-tap-play" id="btnCameraTapPlay" hidden>▶️ タップして えいぞうを ひょうじ</button>
         </div>
         <p class="camera-hint">この わくに かお を あわせてね</p>
         <div class="camera-error" id="cameraError" hidden>
@@ -446,6 +457,7 @@
   const cameraVideo = document.getElementById('cameraVideo');
   const cameraFrameWrap = document.getElementById('cameraFrameWrap');
   const cameraError = document.getElementById('cameraError');
+  const btnCameraTapPlay = document.getElementById('btnCameraTapPlay');
 
   function makeSampleFace(){
     const c = document.createElement('canvas');
@@ -525,6 +537,7 @@
 
   async function startCameraStream(){
     cameraError.hidden = true;
+    btnCameraTapPlay.hidden = true;
     cameraFrameWrap.style.setProperty('--cam-ratio', cols/rows);
     stopCameraStream();
     try{
@@ -535,8 +548,14 @@
       cameraVideo.muted = true;
       cameraVideo.srcObject = cameraStream;
       cameraVideo.style.transform = facingMode==='user' ? 'scaleX(-1)' : 'none';
-      // getUserMediaがawaitを挟むため、autoplay属性だけでは再生が始まらない端末があるので明示的にplay()する
-      try{ await cameraVideo.play(); }catch(playErr){}
+      // getUserMediaがawaitを挟むため、autoplay属性だけでは再生が始まらない端末がある。
+      // 明示的にplay()し、それでもブラウザの自動再生制限で失敗する場合は
+      // 「タップして表示」ボタンを出し、直接のユーザー操作で再生を確定させる。
+      try{
+        await cameraVideo.play();
+      }catch(playErr){
+        btnCameraTapPlay.hidden = false;
+      }
     }catch(err){
       cameraError.hidden = false;
     }
@@ -910,6 +929,9 @@
   document.getElementById('btnCameraClose').addEventListener('click', closeCamera);
   document.getElementById('btnSwitchCam').addEventListener('click', switchCamera);
   document.getElementById('btnCapture').addEventListener('click', captureFromCamera);
+  btnCameraTapPlay.addEventListener('click', function(){
+    cameraVideo.play().then(()=>{ btnCameraTapPlay.hidden = true; }).catch(()=>{});
+  });
   document.getElementById('modeTap').addEventListener('click', ()=>setMode('tap'));
   document.getElementById('modeDrag').addEventListener('click', ()=>setMode('drag'));
   document.getElementById('btnTimer').addEventListener('click', function(){
