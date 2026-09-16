@@ -293,6 +293,8 @@
     margin:0 0 12px;
   }
   .camera-error-text{ font-size:13px; color:var(--coral); margin:0; }
+  .camera-error-detail{ font-size:11.5px; color:var(--ink-soft); margin:0; word-break:break-all; }
+  .camera-error-detail:empty{ display:none; }
 
   .camera-tap-play{
     position:absolute; inset:0; z-index:2;
@@ -395,6 +397,7 @@
         <p class="camera-hint">この わくに かお を あわせてね</p>
         <div class="camera-error" id="cameraError" hidden>
           <p class="camera-error-text">ガイドつきカメラを つかえませんでした。</p>
+          <p class="camera-error-detail" id="cameraErrorDetail"></p>
           <label class="btn btn-primary btn-sm" for="nativeCameraInput">📸 たんまつの カメラで とる</label>
           <input type="file" id="nativeCameraInput" accept="image/*" capture="environment">
         </div>
@@ -457,6 +460,7 @@
   const cameraVideo = document.getElementById('cameraVideo');
   const cameraFrameWrap = document.getElementById('cameraFrameWrap');
   const cameraError = document.getElementById('cameraError');
+  const cameraErrorDetail = document.getElementById('cameraErrorDetail');
   const btnCameraTapPlay = document.getElementById('btnCameraTapPlay');
 
   function makeSampleFace(){
@@ -558,6 +562,7 @@
       }
     }catch(err){
       cameraError.hidden = false;
+      cameraErrorDetail.textContent = (err && (err.name || err.message)) ? (err.name + ': ' + err.message) : '';
     }
   }
 
